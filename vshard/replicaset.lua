@@ -1450,6 +1450,40 @@ local function cluster_calculate_etalon_balance(replicasets, bucket_count)
     end
 end
 
+local function make_replicasets_ro(replicasets)
+    local replicasets_ro = {}
+    for key, rs in pairs(replicasets) do
+        replicasets_ro[key] = setmetatable({ _replicaset = rs, }, {
+            __index = function(self, method)
+                local methods = {
+                    call    = true,
+                    callrw  = true,
+                    callro  = true,
+                    callbro = true,
+                    callre  = true,
+                    callbre = true,
+                }
+                if methods[method] ~= nil then
+                    return function(self, ...)
+                        return self._replicaset[method](self._replicaset, ...)
+                    end
+                end
+                return nil
+            end,
+            __newindex = function()
+                error("Modification of replicaset table is not allowed")
+            end,
+            __metatable = "Replicaset table is protected",
+        })
+    end
+    return setmetatable(replicasets_ro, {
+        __newindex = function()
+            error("Modification of replicasets table is not allowed")
+        end,
+        __metatable = "Replicasets table is protected",
+    })
+end
+
 --
 -- Update/build replicasets from configuration
 --
@@ -1573,4 +1607,5 @@ return {
     rebind_replicasets = rebind_replicasets,
     outdate_replicasets = outdate_replicasets,
     locate_masters = locate_masters,
+    make_replicasets_ro = make_replicasets_ro,
 }
