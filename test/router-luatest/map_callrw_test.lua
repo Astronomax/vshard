@@ -212,6 +212,7 @@ g.test_map_part_double_ref = function(cg)
         -- Make sure the location of the bucket is known.
         local rs, err = ivshard.router.route(bid)
         ilt.assert_equals(err, nil)
+        rs = rs._replicaset
         ilt.assert_equals(rs.uuid, uuid)
     end, {bid1, cg.rs1_uuid})
     -- Then, move the bucket form rs1 to rs2. Now the router has an outdated
